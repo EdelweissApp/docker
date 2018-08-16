@@ -113,6 +113,12 @@ RUN mkdir -p /run /var/lib/nginx /var/lib/php /var/run/sshd && \
     chmod -R 777 /run /var/lib/nginx /var/lib/php /etc/php/7.2/fpm/php.ini && \
     chmod 744 /var/run/sshd
 
+# Add one more user to container
+RUN useradd dev -g www-data -d /home/dev -p 1 -s /bin/bash && \
+    echo 'dev ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers && \
+    mkdir -p /home/dev && \
+    chown dev:www-data /home/dev
+
 COPY files /
 COPY ./run.sh /usr/local/bin/run.sh
 
@@ -121,6 +127,5 @@ EXPOSE 22 80 443 9000 9002
 VOLUME ["/var/www/feed"]
 VOLUME ["/var/www/profile"]
 VOLUME ["/var/www/app"]
-
 
 CMD ["/bin/bash", "/usr/local/bin/run.sh"]

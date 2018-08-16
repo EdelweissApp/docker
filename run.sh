@@ -7,5 +7,12 @@ sed -i -e "s/worker_processes 4/worker_processes $procs/" /etc/nginx/nginx.conf
 # Clean things before change permissions.
 echo '' > ./.ssh/known_hosts
 
+# Replace some env variables
+envsubst < /etc/supervisor/supervisord.conf > /etc/supervisor/supervisord.conf
+
+# Change passwords on start
+echo "root:${BOX_ROOT_SSH_PASSWORD}" | chpasswd
+echo "dev:${BOX_DEV_USER_PASSWORD}" | chpasswd
+
 # Run Supervisor daemon.
 /usr/bin/supervisord

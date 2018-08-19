@@ -131,5 +131,6 @@ EXPOSE 22 80 8080 443 9000 9002
 VOLUME ["/var/www/feed"]
 VOLUME ["/var/www/profile"]
 VOLUME ["/var/www/app"]
+VOLUME ["/etc/nginx/sites-enabled"]
 
 CMD ["/bin/bash", "/usr/local/bin/run.sh"]

@@ -24,7 +24,8 @@ RUN apt-get install -y --no-install-recommends \
     xz-utils \
     locate \ 
     sudo \
-    openssh-server
+    openssh-server \ 
+    unzip
 
 # Configure SSHd
 RUN sed -ri 's/^PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config
@@ -85,19 +86,26 @@ RUN mkdir /tmp/composer/ && \
     cd / && \
     rm -rf /tmp/composer
 
+# Add one more user to container
+RUN useradd dev -g www-data -d /home/dev -p 1 -s /bin/bash && \
+    echo 'dev ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers && \
+    mkdir -p /home/dev && \
+    chown dev:www-data /home/dev 
+
 # Additional configurations for fpm
 RUN sed -i -e "/listen = .*/c\listen = [::]:9000" /etc/php/7.2/fpm/pool.d/www.conf && \
-#    sed -i -e 's/^user = www-data$/;user = www-data/g' /etc/php/7.2/fpm/pool.d/www.conf && \
-#    sed -i -e 's/^group = www-data$/;group = www-data/g' /etc/php/7.2/fpm/pool.d/www.conf && \
-#    sed -i -e 's/^listen.owner = www-data$/;listen.owner = www-data/g' /etc/php/7.2/fpm/pool.d/www.conf && \
-#    sed -i -e 's/^listen.group = www-data$/;listen.group = www-data/g' /etc/php/7.2/fpm/pool.d/www.conf && \
+    sed -i -e 's/^user = www-data$/user = dev/g' /etc/php/7.2/fpm/pool.d/www.conf && \
+    sed -i -e 's/^group = www-data$/group = www-data/g' /etc/php/7.2/fpm/pool.d/www.conf && \
+    sed -i -e 's/^listen.owner = www-data$/listen.owner = dev/g' /etc/php/7.2/fpm/pool.d/www.conf && \
+    sed -i -e 's/^listen.group = www-data$/listen.group = www-data/g' /etc/php/7.2/fpm/pool.d/www.conf && \
     sed -i -e 's/max_execution_time = 30/max_execution_time = 300/g' /etc/php/7.2/fpm/php.ini && \
     sed -i -e 's/upload_max_filesize = 2M/upload_max_filesize = 256M/g' /etc/php/7.2/fpm/php.ini && \
     sed -i -e 's/post_max_size = 8M/post_max_size = 512M/g' /etc/php/7.2/fpm/php.ini && \
     sed -i -e 's/memory_limit = 128M/memory_limit = 512M/g' /etc/php/7.2/fpm/php.ini && \
     sed -i -e 's/fastcgi_param  SERVER_PORT        $server_port;/fastcgi_param  SERVER_PORT        $http_x_forwarded_port;/g' /etc/nginx/fastcgi.conf && \
     sed -i -e 's/fastcgi_param  SERVER_PORT        $server_port;/fastcgi_param  SERVER_PORT        $http_x_forwarded_port;/g' /etc/nginx/fastcgi_params && \
-    sed -i -e '/sendfile on;/a\        fastcgi_read_timeout 300\;' /etc/nginx/nginx.conf
+    sed -i -e '/sendfile on;/a\        fastcgi_read_timeout 300\;' /etc/nginx/nginx.conf && \
+    sed -i -e 's/^user www-data;$/user dev www-data;/g' /etc/nginx/nginx.conf
 
 # Disable xdebug.so extension
 RUN echo ';zend_extension=xdebug.so' > /etc/php/7.2/cli/conf.d/20-xdebug.ini
@@ -113,16 +121,12 @@ RUN mkdir -p /run /var/lib/nginx /var/lib/php /var/run/sshd && \
     chmod -R 777 /run /var/lib/nginx /var/lib/php /etc/php/7.2/fpm/php.ini && \
     chmod 744 /var/run/sshd
 
-# Add one more user to container
-RUN useradd dev -g www-data -d /home/dev -p 1 -s /bin/bash && \
-    echo 'dev ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers && \
-    mkdir -p /home/dev && \
-    chown dev:www-data /home/dev
+RUN su -c 'composer global require "laravel/installer"' - dev
 
 COPY files /
 COPY ./run.sh /usr/local/bin/run.sh
 
-EXPOSE 22 80 443 9000 9002
+EXPOSE 22 80 8080 443 9000 9002
 
 VOLUME ["/var/www/feed"]
 VOLUME ["/var/www/profile"]

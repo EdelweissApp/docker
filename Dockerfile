@@ -122,6 +122,7 @@ RUN mkdir -p /run /var/lib/nginx /var/lib/php /var/run/sshd && \
     chmod 744 /var/run/sshd
 
 RUN su -c 'composer global require "laravel/installer"' - dev
+RUN apt-get install -y python-pip && pip install envtpl
 
 COPY files /
 COPY ./run.sh /usr/local/bin/run.sh
